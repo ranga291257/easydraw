@@ -1,0 +1,27 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Sketches, exports and recovery data (including nested paths)
+*.png
+*.pdf
+recovery*/
+autosave*/
+sketches/
+
+# Local settings, secrets and backups
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+*~
+*.bak
+.DS_Store

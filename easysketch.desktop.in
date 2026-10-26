@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=EasySketch
+Comment=A4 landscape sketch pad
+Exec=python3 "@APP_SCRIPT@"
+Icon=applications-graphics
+Terminal=false
+Categories=Graphics;
