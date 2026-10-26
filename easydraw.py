@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple A4 landscape sketch pad for Linux tablets."""
+"""EasyDraw — A4 landscape sketch pad for Linux tablets."""
 import os
 import sys
 
@@ -232,7 +232,7 @@ class Canvas(QWidget):
 class SketchApp(QMainWindow):
     def __init__(self, autosave_path=None):
         super().__init__()
-        self.setWindowTitle("EasySketch")
+        self.setWindowTitle("EasyDraw")
         self.resize(1100, 800)
         self.canvas = Canvas()
         self.setCentralWidget(self.canvas)
@@ -450,6 +450,7 @@ class SketchApp(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    app.setApplicationName("EasyDraw")
     window = SketchApp()
     window.show()
     return app.exec()

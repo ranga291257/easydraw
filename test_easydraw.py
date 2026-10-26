@@ -12,7 +12,7 @@ from PyQt6.QtGui import (QInputDevice, QPointingDevice, QTabletEvent, QColor, QI
                          QMouseEvent, QEnterEvent)
 from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
-from simple_sketch import PAGE_W, PAGE_H, SketchApp
+from easydraw import PAGE_W, PAGE_H, SketchApp
 
 
 class SketchTests(unittest.TestCase):
