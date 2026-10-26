@@ -62,20 +62,59 @@ class SketchTests(unittest.TestCase):
         c.undo()
         self.assertEqual(c.image.pixelColor(PAGE_W // 2, PAGE_H // 2), QColor("black"))
 
-    def test_thickness_and_eraser_cursor(self):
+    def test_width_and_eraser_cursor(self):
         c = self.window.canvas
         original = c.cursor().shape()
+        self.assertEqual(self.window.size_button.toolTip(), "Width: Thin")
         self.window.size_button.menu().actions()[1].trigger()
         self.assertEqual(c.width_px, 10)
+        self.assertEqual(self.window.size_button.toolTip(), "Width: Thick")
         self.window.size_button.menu().actions()[0].trigger()
         self.assertEqual(c.width_px, 3)
+        self.assertEqual(self.window.size_button.toolTip(), "Width: Thin")
         self.window.eraser_button.setChecked(True)
         self.assertTrue(c.eraser)
+        self.assertEqual(self.window.eraser_button.toolTip(), "Eraser (on)")
         self.assertEqual(c.cursor().shape(), Qt.CursorShape.BlankCursor)
         self.assertTrue(c.hasMouseTracking())
         self.window.eraser_button.setChecked(False)
         self.assertFalse(c.eraser)
+        self.assertEqual(self.window.eraser_button.toolTip(), "Eraser")
         self.assertEqual(c.cursor().shape(), original)
+
+    def test_file_menu_and_color_tooltip(self):
+        file_menu = self.window.menuBar().actions()[0].menu()
+        labels = [a.text() for a in file_menu.actions() if not a.isSeparator()]
+        self.assertEqual(labels, [
+            "Open PNG…", "Save as PNG…", "Save as PDF…", "Copy to Clipboard",
+            "Clear Page…", "Quit",
+        ])
+        self.assertEqual(self.window.color_button.toolTip(), "Color: Black")
+        self.window.color_button.menu().actions()[3].trigger()
+        self.assertEqual(self.window.canvas.color, QColor("#d02020"))
+        self.assertEqual(self.window.color_button.toolTip(), "Color: Red")
+        self.assertFalse(self.window.eraser_button.isChecked())
+
+    def test_a4_and_stretch_view(self):
+        c = self.window.canvas
+        # Non-A4 widget so letterbox vs stretch differ clearly.
+        c.resize(1200, 600)
+        x, y, w, h = c.fit()
+        self.assertAlmostEqual(w / h, PAGE_W / PAGE_H, places=5)
+        self.assertLess(w + 24, c.width())
+        self.assertIn("View: A4", self.window.view_button.toolTip())
+        self.window.view_button.setChecked(True)
+        self.assertTrue(c.stretch)
+        self.assertIn("View: Stretch", self.window.view_button.toolTip())
+        x, y, w, h = c.fit()
+        self.assertEqual(w, c.width() - 24)
+        self.assertEqual(h, c.height() - 24)
+        self.stroke(QPointF(x + w / 2, y + h / 2))
+        self.assertEqual(c.image.pixelColor(PAGE_W // 2, PAGE_H // 2), QColor("black"))
+        self.window.view_button.setChecked(False)
+        self.assertFalse(c.stretch)
+        _, _, w2, h2 = c.fit()
+        self.assertAlmostEqual(w2 / h2, PAGE_W / PAGE_H, places=5)
 
     def test_eraser_overlay_hover_leave_and_export(self):
         c = self.window.canvas

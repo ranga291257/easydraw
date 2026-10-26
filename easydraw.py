@@ -3,15 +3,108 @@
 import os
 import sys
 
-from PyQt6.QtCore import Qt, QPointF, QRect, QStandardPaths, QTimer, QSaveFile, pyqtSignal
-from PyQt6.QtGui import (QColor, QImage, QPainter, QPen, QTabletEvent,
+from PyQt6.QtCore import Qt, QPointF, QRect, QSize, QStandardPaths, QTimer, QSaveFile, pyqtSignal
+from PyQt6.QtGui import (QColor, QIcon, QImage, QPainter, QPen, QPixmap, QTabletEvent,
                          QPointingDevice, QPdfWriter, QPageSize, QPageLayout, QAction)
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QToolBar,
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QToolBar, QStyle,
                              QFileDialog, QMessageBox, QToolButton, QMenu)
 
 COLORS = [("Black", QColor("#000000")), ("Blue", QColor("#1565c0")),
           ("Green", QColor("#16833b")), ("Red", QColor("#d02020"))]
 PAGE_W, PAGE_H = 3508, 2480  # A4 landscape at 300 DPI
+ICON_PX = 22
+
+
+def _theme_icon(names, fallback=None):
+    for name in names:
+        icon = QIcon.fromTheme(name)
+        if not icon.isNull():
+            return icon
+    return fallback if fallback is not None else QIcon()
+
+
+def _pixmap_icon(paint_fn):
+    pix = QPixmap(ICON_PX, ICON_PX)
+    pix.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pix)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    paint_fn(painter)
+    painter.end()
+    return QIcon(pix)
+
+
+def color_icon(color):
+    def paint(p):
+        p.setBrush(color)
+        p.setPen(QPen(QColor("#444444"), 1))
+        p.drawEllipse(3, 3, ICON_PX - 6, ICON_PX - 6)
+    return _pixmap_icon(paint)
+
+
+def width_icon(width_px):
+    def paint(p):
+        pen_w = 2 if width_px <= 3 else 5
+        y = ICON_PX // 2
+        # Dark outline then light stroke so the line reads on dark and light toolbars.
+        for color, extra in ((QColor("#111111"), 2), (QColor("#f0f0f0"), 0)):
+            p.setPen(QPen(color, pen_w + extra, Qt.PenStyle.SolidLine,
+                          Qt.PenCapStyle.RoundCap))
+            p.drawLine(3, y, ICON_PX - 3, y)
+    return _pixmap_icon(paint)
+
+
+def eraser_icon():
+    icon = _theme_icon(["draw-eraser", "edit-clear"])
+    if not icon.isNull():
+        return icon
+
+    def paint(p):
+        p.setBrush(QColor("#f0c0a0"))
+        p.setPen(QPen(QColor("#555555"), 1))
+        p.drawRoundedRect(4, 6, 14, 10, 2, 2)
+        p.setBrush(QColor("#eeeeee"))
+        p.drawRect(4, 12, 14, 4)
+    return _pixmap_icon(paint)
+
+
+def undo_icon(widget):
+    return _theme_icon(
+        ["edit-undo", "go-previous"],
+        widget.style().standardIcon(QStyle.StandardPixmap.SP_ArrowBack))
+
+
+def redo_icon(widget):
+    return _theme_icon(
+        ["edit-redo", "go-next"],
+        widget.style().standardIcon(QStyle.StandardPixmap.SP_ArrowForward))
+
+
+def fit_icon():
+    """A4 letterbox: page with side margins."""
+    def paint(p):
+        p.fillRect(1, 5, ICON_PX - 2, ICON_PX - 10, QColor("#888888"))
+        p.setBrush(QColor("#f5f5f5"))
+        p.setPen(QPen(QColor("#333333"), 1))
+        p.drawRect(5, 6, ICON_PX - 10, ICON_PX - 12)
+    return _pixmap_icon(paint)
+
+
+def stretch_icon():
+    """Stretch-to-fill: full page with corner expand marks."""
+    def paint(p):
+        p.setBrush(QColor("#f5f5f5"))
+        p.setPen(QPen(QColor("#333333"), 1))
+        p.drawRect(3, 3, ICON_PX - 6, ICON_PX - 6)
+        p.setPen(QPen(QColor("#1565c0"), 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        for x0, y0, x1, y1 in (
+            (2, 2, 6, 2), (2, 2, 2, 6),
+            (ICON_PX - 3, 2, ICON_PX - 7, 2), (ICON_PX - 3, 2, ICON_PX - 3, 6),
+            (2, ICON_PX - 3, 6, ICON_PX - 3), (2, ICON_PX - 3, 2, ICON_PX - 7),
+            (ICON_PX - 3, ICON_PX - 3, ICON_PX - 7, ICON_PX - 3),
+            (ICON_PX - 3, ICON_PX - 3, ICON_PX - 3, ICON_PX - 7),
+        ):
+            p.drawLine(x0, y0, x1, y1)
+    return _pixmap_icon(paint)
 
 
 class Canvas(QWidget):
@@ -36,6 +129,7 @@ class Canvas(QWidget):
         self.saved_revision = 0
         self.next_revision = 1
         self.before_stroke = None
+        self.stretch = False
 
     @staticmethod
     def blank_image():
@@ -104,8 +198,13 @@ class Canvas(QWidget):
         self.replace_image(self.blank_image())
 
     def fit(self):
-        scale = min((self.width() - 24) / PAGE_W, (self.height() - 24) / PAGE_H)
-        w, h = PAGE_W * scale, PAGE_H * scale
+        avail_w = max(1, self.width() - 24)
+        avail_h = max(1, self.height() - 24)
+        if self.stretch:
+            w, h = float(avail_w), float(avail_h)
+        else:
+            scale = min(avail_w / PAGE_W, avail_h / PAGE_H)
+            w, h = PAGE_W * scale, PAGE_H * scale
         return (self.width() - w) / 2, (self.height() - h) / 2, w, h
 
     def paintEvent(self, event):
@@ -244,66 +343,99 @@ class SketchApp(QMainWindow):
         self.autosave_timer.timeout.connect(self.autosave)
         self.canvas.changed.connect(self.schedule_autosave)
 
+        file_menu = self.menuBar().addMenu("&File")
+        open_act = file_menu.addAction("Open PNG…", self.open_png)
+        open_act.setShortcut("Ctrl+O")
+        save_png_act = file_menu.addAction("Save as PNG…", self.save_png)
+        save_png_act.setShortcut("Ctrl+S")
+        file_menu.addAction("Save as PDF…", self.save_pdf)
+        copy_act = file_menu.addAction("Copy to Clipboard", self.copy_image)
+        copy_act.setShortcut("Ctrl+C")
+        file_menu.addSeparator()
+        file_menu.addAction("Clear Page…", self.clear)
+        quit_act = file_menu.addAction("Quit", self.close)
+        quit_act.setShortcut("Ctrl+Q")
+
         bar = QToolBar("Sketch tools")
         bar.setMovable(False)
+        bar.setIconSize(QSize(ICON_PX, ICON_PX))
+        bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self.addToolBar(bar)
+
+        self.color_name = "Black"
         self.color_button = QToolButton()
-        self.color_button.setText("Color: Black")
+        self.color_button.setIcon(color_icon(COLORS[0][1]))
+        self.color_button.setToolTip("Color: Black")
         color_menu = QMenu(self)
         for name, color in COLORS:
-            color_menu.addAction(name).triggered.connect(
-                lambda checked=False, n=name, c=color: self.set_color(c, n))
+            act = color_menu.addAction(color_icon(color), name)
+            act.triggered.connect(lambda checked=False, n=name, c=color: self.set_color(c, n))
         self.color_button.setMenu(color_menu)
         self.color_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         bar.addWidget(self.color_button)
 
+        self.width_name = "Thin"
         self.size_button = QToolButton()
-        self.size_button.setText("Thickness: Thin")
+        self.size_button.setIcon(width_icon(3))
+        self.size_button.setToolTip("Width: Thin")
         size_menu = QMenu(self)
         for name, width in (("Thin", 3), ("Thick", 10)):
-            size_menu.addAction(name).triggered.connect(
-                lambda checked=False, n=name, w=width: self.set_width(w, n))
+            act = size_menu.addAction(width_icon(width), name)
+            act.triggered.connect(lambda checked=False, n=name, w=width: self.set_width(w, n))
         self.size_button.setMenu(size_menu)
         self.size_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         bar.addWidget(self.size_button)
 
-        self.eraser_button = QAction("Eraser: Off", self)
+        self.eraser_button = QAction(eraser_icon(), "Eraser", self)
         self.eraser_button.setCheckable(True)
+        self.eraser_button.setToolTip("Eraser")
         self.eraser_button.toggled.connect(self.set_eraser)
         bar.addAction(self.eraser_button)
-        bar.addAction("Undo", self.canvas.undo).setShortcut("Ctrl+Z")
-        bar.addAction("Redo", self.canvas.redo).setShortcut("Ctrl+Shift+Z")
-        bar.addAction("Copy image", self.copy_image).setShortcut("Ctrl+C")
-        bar.addAction("Open PNG", self.open_png).setShortcut("Ctrl+O")
-        save_button = QToolButton()
-        save_button.setText("Save")
-        save_menu = QMenu(self)
-        save_menu.addAction("PNG", self.save_png)
-        save_menu.addAction("PDF", self.save_pdf)
-        save_button.setMenu(save_menu)
-        save_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        bar.addWidget(save_button)
-        more_button = QToolButton()
-        more_button.setText("More")
-        more_menu = QMenu(self)
-        more_menu.addAction("Clear page", self.clear)
-        more_button.setMenu(more_menu)
-        more_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        bar.addWidget(more_button)
+
+        undo_act = QAction(undo_icon(self), "Undo", self)
+        undo_act.setShortcut("Ctrl+Z")
+        undo_act.setToolTip("Undo (Ctrl+Z)")
+        undo_act.triggered.connect(self.canvas.undo)
+        bar.addAction(undo_act)
+
+        redo_act = QAction(redo_icon(self), "Redo", self)
+        redo_act.setShortcut("Ctrl+Shift+Z")
+        redo_act.setToolTip("Redo (Ctrl+Shift+Z)")
+        redo_act.triggered.connect(self.canvas.redo)
+        bar.addAction(redo_act)
+
+        self.view_button = QAction(fit_icon(), "View", self)
+        self.view_button.setCheckable(True)
+        self.view_button.setToolTip("View: A4 (true proportions; export stays A4)")
+        self.view_button.toggled.connect(self.set_stretch)
+        bar.addAction(self.view_button)
+
         self.recover()
+
+    def set_stretch(self, on):
+        self.canvas.stretch = on
+        self.view_button.setIcon(stretch_icon() if on else fit_icon())
+        self.view_button.setToolTip(
+            "View: Stretch (fills window; export stays A4)" if on
+            else "View: A4 (true proportions; export stays A4)")
+        self.canvas.update()
 
     def set_color(self, c, name):
         self.canvas.color = c
+        self.color_name = name
         self.eraser_button.setChecked(False)
-        self.color_button.setText(f"Color: {name}")
+        self.color_button.setIcon(color_icon(c))
+        self.color_button.setToolTip(f"Color: {name}")
 
     def set_width(self, w, name):
         self.canvas.width_px = w
-        self.size_button.setText(f"Thickness: {name}")
+        self.width_name = name
+        self.size_button.setIcon(width_icon(w))
+        self.size_button.setToolTip(f"Width: {name}")
 
     def set_eraser(self, on):
         self.canvas.set_eraser(on)
-        self.eraser_button.setText("Eraser: On" if on else "Eraser: Off")
+        self.eraser_button.setToolTip("Eraser (on)" if on else "Eraser")
 
     def clear(self):
         if QMessageBox.question(self, "Clear page?", "Erase the whole page?") == QMessageBox.StandardButton.Yes:

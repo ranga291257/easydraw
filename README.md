@@ -1,6 +1,6 @@
 # EasyDraw
 
-A small A4 landscape (3508 × 2480 pixel) sketch pad for Linux, written in Python and PyQt6. Draw with a mouse or tablet stylus; strokes have fixed widths (Thin: 3 px, Thick: 10 px), independent of pen pressure. The toolbar offers four colors, an eraser, undo/redo, clear, PNG import, PNG/PDF export, and copy-to-clipboard. Unsaved changes are periodically saved to an app-data recovery image, with a recovery prompt on next launch. Tablet support is implemented via Qt tablet events; actual XP-Pen Deco01 hardware behavior depends on the local input/desktop setup and is not hardware-validated here.
+A small A4 landscape (3508 × 2480 pixel) sketch pad for Linux, written in Python and PyQt6. Draw with a mouse or tablet stylus; strokes have fixed widths (Thin: 3 px, Thick: 10 px), independent of pen pressure. The File menu covers PNG import, PNG/PDF export, copy-to-clipboard, and clear; the icon toolbar offers color, width, eraser, undo/redo, and an A4/Stretch view toggle (hover tooltips name each control). Stretch fills the window for tablet use; exports remain A4 either way. Unsaved changes are periodically saved to an app-data recovery image, with a recovery prompt on next launch. Tablet support is implemented via Qt tablet events; actual XP-Pen Deco01 hardware behavior depends on the local input/desktop setup and is not hardware-validated here.
 
 ## Arch Linux: install and run
 
@@ -9,7 +9,15 @@ sudo pacman -S python python-pyqt6
 python3 easydraw.py
 ```
 
-Run the commands from this repository directory (or pass an absolute path to `easydraw.py`). Sketches and recovery images are not part of the source repository. Save your work using the Save menu; the recovery image is not a substitute for an export.
+Run the commands from this repository directory (or pass an absolute path to `easydraw.py`). Sketches and recovery images are not part of the source repository. Save your work using File → Save as PNG… / Save as PDF…; the recovery image is not a substitute for an export.
+
+## Controls
+
+**File menu:** Open PNG, Save as PNG (`Ctrl+S`), Save as PDF, Copy to Clipboard (`Ctrl+C`), Clear Page, Quit (`Ctrl+Q`). Also `Ctrl+O` for Open.
+
+**Toolbar** (icons; hover for names): Color, Width (Thin/Thick), Eraser, Undo (`Ctrl+Z`), Redo (`Ctrl+Shift+Z`), View.
+
+**View:** A4 keeps true page proportions (gray margins if the window aspect differs). Stretch fills the window so a tablet like an XP-Pen Deco can use more of the surface. The sketch bitmap and exports stay A4 landscape either way.
 
 ## Tests
 
