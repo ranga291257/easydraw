@@ -4,7 +4,7 @@
 **Upstream:** https://github.com/ranga291257/easydraw  
 **License:** MIT (`LICENSE`)
 
-This tree ships packaging helpers under `packaging/`. Omarchy and the community store only list apps that install via **pacman / AUR / Omarchy packages** — not a zip from GitHub alone.
+This tree ships packaging helpers under `packaging/`. Omarchy and the community store only list apps that install via **pacman / AUR / Omarchy packages** — not a zip from GitHub alone. The GitHub repository must stay **public** so PKGBUILD sources and store metadata can fetch releases.
 
 ## 1. Release (upstream)
 

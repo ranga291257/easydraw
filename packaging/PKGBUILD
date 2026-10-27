@@ -9,7 +9,7 @@ license=('MIT')
 depends=('python' 'python-pyqt6')
 optdepends=('poppler: pdfinfo for the offscreen test suite')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/ranga291257/easydraw/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('0ceac1df05f745150c0b53c6a1e39ebc196b1153eb88c4a25f620d0c109678c7')
 
 package() {
   cd "$srcdir/$pkgname-$pkgver"
