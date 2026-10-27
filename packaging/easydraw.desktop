@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=EasyDraw
+GenericName=Sketch Pad
+Comment=A4 landscape sketch pad by Ranga Seshadri
+Exec=easydraw
+Icon=applications-graphics
+Terminal=false
+Categories=Graphics;2DGraphics;
+Keywords=sketch;drawing;tablet;A4;EasyDraw;
+StartupNotify=true

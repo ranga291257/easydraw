@@ -1,8 +1,11 @@
 [Desktop Entry]
 Type=Application
 Name=EasyDraw
-Comment=A4 landscape sketch pad
+GenericName=Sketch Pad
+Comment=A4 landscape sketch pad by Ranga Seshadri
 Exec=python3 "@APP_SCRIPT@"
 Icon=applications-graphics
 Terminal=false
-Categories=Graphics;
+Categories=Graphics;2DGraphics;
+Keywords=sketch;drawing;tablet;A4;EasyDraw;
+StartupNotify=true

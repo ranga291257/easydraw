@@ -1,0 +1,22 @@
+# Maintainer: Ranga Seshadri <rangabb@gmail.com>
+pkgname=easydraw
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='A4 landscape sketch pad for Linux tablets (author: Ranga Seshadri)'
+arch=('any')
+url='https://github.com/ranga291257/easydraw'
+license=('MIT')
+depends=('python' 'python-pyqt6')
+optdepends=('poppler: pdfinfo for the offscreen test suite')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/ranga291257/easydraw/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+
+  install -Dm755 easydraw.py "$pkgdir/usr/bin/easydraw"
+  install -Dm644 packaging/easydraw.desktop \
+    "$pkgdir/usr/share/applications/easydraw.desktop"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "easydraw",
+  "name": "EasyDraw",
+  "category": "graphics",
+  "github": "ranga291257/easydraw",
+  "developer": "Ranga Seshadri",
+  "summary": "A4 landscape sketch pad for mouse and tablet stylus",
+  "description": "EasyDraw is a small A4 landscape sketch pad by Ranga Seshadri. Draw with a mouse or tablet, export PNG/PDF, and toggle A4 or Stretch view for XP-Pen-style tablets.",
+  "install": { "method": "aur", "packages": ["easydraw"] },
+  "detect": ["easydraw"],
+  "kind": "gui",
+  "open": "easydraw",
+  "tags": ["sketch", "drawing", "tablet", "A4", "png", "pdf"]
+}
